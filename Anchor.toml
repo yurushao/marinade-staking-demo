@@ -21,17 +21,22 @@ shutdown_wait = 2000
 [test.validator]
 ledger = ".anchor/test-ledger"
 rpc_port = 8899
-url = "https://api.devnet.solana.com"
+# url = "https://api.devnet.solana.com"
+url = "https://api.mainnet-beta.solana.com"
 
 [[test.genesis]]
 address = "MarBmsSgKXdrN1egZf5sqe1TMai9K1rChYNDJgjq7aD"
 program = "./fixtures/marinade.so"
 
+# marinade state account
+[[test.validator.clone]]
+address = "8szGkuLTAux9XMgZ2vtY39jVSowEcpBfFfD8hXSEqdGC"
+
 # mSOL token mint + authority (PDA)
 [[test.validator.clone]]
 address = "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So"
-[[test.validator.clone]]
-address = "3JLPCS1qM2zRw3Dp6V4hZnYHd4toMNPkNesXdX9tg6KM"
+# [[test.validator.clone]]
+# address = "3JLPCS1qM2zRw3Dp6V4hZnYHd4toMNPkNesXdX9tg6KM"
 
 # Treasury
 # Reserve SOL account (PDA)
@@ -40,7 +45,7 @@ address = "Du3Ysj1wKbxPKkuPPnvzQLQh8oMSVifs3jGZjJWXFmHN"
 
 # Treasury mSOL account
 [[test.validator.clone]]
-address = "8ZUcztoAEhpAeC2ixWewJKQJsSUGYSGPVAjkhDJYf5Gd"
+address = "B1aLzaNMeFVAyQ6f3XbbUyKcH2YPHu2fqiEagmiF23VR"
 
 # Liquidity-Pool 
 # mSOL-SOL-LP mint
@@ -54,6 +59,10 @@ address = "LPmSozJJ8Jh69ut2WP3XmVohTjL4ipR18yiCzxrUmVj"
 # mSOL leg account
 [[test.validator.clone]]
 address = "7GgPYjS5Dza89wV6FpZ23kUJRG5vbQ1GM25ezspYFSoE"
+
+# mSOL leg authority
+[[test.validator.clone]]
+address = "EyaSjUtSgo9aRD1f8LWXwdvkpDTmXAW54yoSHZRF14WL"
 
 # SOL leg account
 [[test.validator.clone]]
