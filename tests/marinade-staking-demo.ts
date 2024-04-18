@@ -8,7 +8,10 @@ import {
 import { PublicKey } from "@solana/web3.js";
 import { MarinadeStakingDemo } from "../target/types/marinade_staking_demo";
 import { Marinade, MarinadeConfig } from "@marinade.finance/marinade-ts-sdk";
-import { getOrCreateAssociatedTokenAccount } from "@marinade.finance/marinade-ts-sdk/dist/src/util";
+import {
+  SYSTEM_PROGRAM_ID,
+  getOrCreateAssociatedTokenAccount,
+} from "@marinade.finance/marinade-ts-sdk/dist/src/util";
 
 describe("marinade-staking-demo", () => {
   // Configure the client to use the local cluster.
@@ -17,8 +20,6 @@ describe("marinade-staking-demo", () => {
   const wallet = provider.wallet;
   const connection = provider.connection;
   const program = workspace.MarinadeStakingDemo as Program<MarinadeStakingDemo>;
-
-  const wsol = new PublicKey("So11111111111111111111111111111111111111112");
 
   // marinade setup
   const marinadeProgram = new PublicKey(
@@ -85,6 +86,7 @@ describe("marinade-staking-demo", () => {
       [Buffer.from("treasury")],
       program.programId
     );
+    console.log("treasuryPda", pda.toBase58(), "bump", bump);
     treasuryPda = pda;
     treasuryBump = bump;
     treasurymSolAta = (
@@ -100,8 +102,9 @@ describe("marinade-staking-demo", () => {
   it("Init treasury", async () => {
     try {
       const tx = await program.methods
-        .init()
+        .init(treasuryBump)
         .accounts({
+          signer: wallet.publicKey,
           treasuryPda,
         })
         .rpc({ commitment: "confirmed" });
@@ -109,12 +112,14 @@ describe("marinade-staking-demo", () => {
       console.log("Error", error);
       throw error;
     }
+
+    await connection.requestAirdrop(treasuryPda, 100_000_000_000);
   });
 
   it("Stake", async () => {
     try {
       const tx = await program.methods
-        .deposit(new BN(1e10), treasuryBump)
+        .deposit(new BN(1e5), treasuryBump)
         .accounts({
           signer: wallet.publicKey,
           reservePda: await marinadeState.reserveAddress(),
