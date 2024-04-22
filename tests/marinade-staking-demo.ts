@@ -8,11 +8,7 @@ import {
 import { PublicKey } from "@solana/web3.js";
 import { MarinadeStakingDemo } from "../target/types/marinade_staking_demo";
 import { Marinade, MarinadeConfig } from "@marinade.finance/marinade-ts-sdk";
-import {
-  SYSTEM_PROGRAM_ID,
-  getOrCreateAssociatedTokenAccount,
-} from "@marinade.finance/marinade-ts-sdk/dist/src/util";
-import { getAccount } from "@solana/spl-token";
+import { getOrCreateAssociatedTokenAccount } from "@marinade.finance/marinade-ts-sdk/dist/src/util";
 
 describe("marinade-staking-demo", () => {
   // Configure the client to use the local cluster.
