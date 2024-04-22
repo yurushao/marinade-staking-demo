@@ -12,6 +12,8 @@ declare_id!("DfHJpPQ7BNhGz9LNvohUgqFMDRqfLDeDXk8GKqnryNPT");
 
 #[program]
 pub mod marinade_staking_demo {
+    use marinade::marinade_finance::liquid_unstake;
+
     use super::*;
 
     pub fn init<'c: 'info, 'info>(ctx: Context<Init>, treasury_pda_bump: u8) -> Result<()> {
@@ -40,7 +42,7 @@ pub mod marinade_staking_demo {
 
     pub fn deposit<'c: 'info, 'info>(
         ctx: Context<Deposit>,
-        amount: u64,
+        sol_amount: u64,
         treasury_bump: u8,
     ) -> Result<()> {
         msg!(
@@ -54,7 +56,7 @@ pub mod marinade_staking_demo {
             ctx.accounts.treasury_pda.lamports()
         );
 
-        require_gte!(ctx.accounts.treasury_pda.lamports(), amount);
+        require_gte!(ctx.accounts.treasury_pda.lamports(), sol_amount);
 
         let cpi_program = ctx.accounts.marinade_program.to_account_info();
         let cpi_accounts = MarinadeDeposit {
@@ -74,11 +76,32 @@ pub mod marinade_staking_demo {
         let seeds = &[b"treasury".as_ref(), &[treasury_bump]];
         let signer_seeds = &[&seeds[..]];
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
-        let _ = marinade_deposit(cpi_ctx, amount);
+        let _ = marinade_deposit(cpi_ctx, sol_amount);
         Ok(())
     }
 
-    pub fn unstake<'c: 'info, 'info>(_ctx: Context<Unstake>) -> Result<()> {
+    pub fn unstake<'c: 'info, 'info>(
+        ctx: Context<Unstake>,
+        msol_amount: u64,
+        treasury_bump: u8,
+    ) -> Result<()> {
+        let cpi_program = ctx.accounts.marinade_program.to_account_info();
+        let cpi_accounts = MarinadeLiquidUnstake {
+            state: ctx.accounts.marinade_state.to_account_info(),
+            msol_mint: ctx.accounts.msol_mint.to_account_info(),
+            liq_pool_sol_leg_pda: ctx.accounts.liq_pool_sol_leg_pda.to_account_info(),
+            liq_pool_msol_leg: ctx.accounts.liq_pool_msol_leg.to_account_info(),
+            get_msol_from: ctx.accounts.get_msol_from.to_account_info(),
+            get_msol_from_authority: ctx.accounts.get_msol_from_authority.to_account_info(),
+            transfer_sol_to: ctx.accounts.transfer_sol_to.to_account_info(),
+            treasury_msol_account: ctx.accounts.treasury_msol_account.to_account_info(),
+            system_program: ctx.accounts.system_program.to_account_info(),
+            token_program: ctx.accounts.token_program.to_account_info(),
+        };
+        let seeds = &[b"treasury".as_ref(), &[treasury_bump]];
+        let signer_seeds = &[&seeds[..]];
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+        let _ = marinade_liquid_unstake(cpi_ctx, msol_amount);
         Ok(())
     }
 }
@@ -99,7 +122,7 @@ pub struct Init<'info> {
     //     owner = system_program.key(),
     //     space = 8
     // )]
-    /// CHECK: skip
+    /// CHECK: will be initialized in the program
     #[account(mut)]
     pub treasury_pda: AccountInfo<'info>,
 
@@ -158,7 +181,40 @@ pub struct Deposit<'info> {
 
 #[derive(Accounts)]
 pub struct Unstake<'info> {
+    // pub signer: Signer<'info>,
+    /// CHECK: skip
     #[account(mut)]
-    pub signer: Signer<'info>,
+    pub marinade_state: AccountInfo<'info>,
+
+    /// CHECK: skip
+    #[account(mut)]
+    pub msol_mint: AccountInfo<'info>,
+
+    /// CHECK: skip
+    #[account(mut)]
+    pub liq_pool_sol_leg_pda: AccountInfo<'info>,
+
+    /// CHECK: skip
+    #[account(mut)]
+    pub liq_pool_msol_leg: AccountInfo<'info>,
+
+    /// CHECK: skip
+    #[account(mut)]
+    pub treasury_msol_account: AccountInfo<'info>,
+
+    /// CHECK: skip
+    #[account(mut)]
+    pub get_msol_from: AccountInfo<'info>,
+
+    /// CHECK: skip
+    #[account(mut)]
+    pub get_msol_from_authority: AccountInfo<'info>,
+
+    /// CHECK: skip
+    #[account(mut)]
+    pub transfer_sol_to: AccountInfo<'info>,
+
     pub marinade_program: Program<'info, MarinadeFinance>,
+    pub token_program: Program<'info, Token>,
+    pub system_program: Program<'info, System>,
 }

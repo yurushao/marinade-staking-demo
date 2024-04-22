@@ -12,6 +12,7 @@ import {
   SYSTEM_PROGRAM_ID,
   getOrCreateAssociatedTokenAccount,
 } from "@marinade.finance/marinade-ts-sdk/dist/src/util";
+import { getAccount } from "@solana/spl-token";
 
 describe("marinade-staking-demo", () => {
   // Configure the client to use the local cluster.
@@ -112,14 +113,15 @@ describe("marinade-staking-demo", () => {
       console.log("Error", error);
       throw error;
     }
-
     await connection.requestAirdrop(treasuryPda, 100_000_000_000);
+    // delay 1s for the airdrop to be confirmed
+    await new Promise((resolve) => setTimeout(resolve, 1000));
   });
 
   it("Stake", async () => {
     try {
       const tx = await program.methods
-        .deposit(new BN(1e5), treasuryBump)
+        .deposit(new BN(1e10), treasuryBump)
         .accounts({
           signer: wallet.publicKey,
           reservePda: await marinadeState.reserveAddress(),
@@ -131,6 +133,31 @@ describe("marinade-staking-demo", () => {
           liqPoolSolLegPda: await marinadeState.solLeg(),
           mintTo: treasurymSolAta,
           treasuryPda,
+          marinadeProgram,
+        })
+        .rpc({ commitment: "confirmed" });
+      console.log("Your transaction signature", tx);
+    } catch (error) {
+      console.log("Error", error);
+      throw error;
+    }
+  });
+
+  it("Withdraw", async () => {
+    try {
+      const tx = await program.methods
+        .unstake(new BN(1e9), treasuryBump)
+        .accounts({
+          marinadeState: marinadeState.marinadeStateAddress,
+          msolMint: marinadeState.mSolMintAddress,
+          liqPoolSolLegPda: await marinadeState.solLeg(),
+          liqPoolMsolLeg: marinadeState.mSolLeg,
+          getMsolFrom: treasurymSolAta,
+          getMsolFromAuthority: treasuryPda,
+          transferSolTo: treasuryPda,
+          treasuryMsolAccount: new PublicKey(
+            "B1aLzaNMeFVAyQ6f3XbbUyKcH2YPHu2fqiEagmiF23VR"
+          ),
           marinadeProgram,
         })
         .rpc({ commitment: "confirmed" });
