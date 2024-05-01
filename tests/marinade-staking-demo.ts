@@ -4,6 +4,7 @@ import {
   setProvider,
   workspace,
   BN,
+  web3,
 } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { MarinadeStakingDemo } from "../target/types/marinade_staking_demo";
@@ -23,6 +24,10 @@ describe("marinade-staking-demo", () => {
     "MarBmsSgKXdrN1egZf5sqe1TMai9K1rChYNDJgjq7aD"
   );
 
+  const marinadeTreasuryMsol = new PublicKey(
+    "B1aLzaNMeFVAyQ6f3XbbUyKcH2YPHu2fqiEagmiF23VR"
+  );
+
   const config = new MarinadeConfig({
     connection: connection,
     publicKey: wallet.publicKey,
@@ -31,8 +36,9 @@ describe("marinade-staking-demo", () => {
   let marinadeState; // will be initialized in beforeAll
 
   let treasurymSolAta; // will be initialized in beforeAll
-  let treasuryPda; // will be initialized in beforeAll
-  let treasuryBump; // will be initialized in beforeAll
+  let treasuryPda, treasuryBump; // will be initialized in beforeAll
+
+  let ticketPda, ticketBump;
 
   before(async () => {
     /*
@@ -79,13 +85,16 @@ describe("marinade-staking-demo", () => {
     );
 
     // treasury setup
-    const [pda, bump] = PublicKey.findProgramAddressSync(
+    [treasuryPda, treasuryBump] = PublicKey.findProgramAddressSync(
       [Buffer.from("treasury")],
       program.programId
     );
-    console.log("treasuryPda", pda.toBase58(), "bump", bump);
-    treasuryPda = pda;
-    treasuryBump = bump;
+    console.log(
+      "treasuryPda",
+      treasuryPda.toBase58(),
+      "treasuryBump",
+      treasuryBump
+    );
     treasurymSolAta = (
       await getOrCreateAssociatedTokenAccount(
         provider,
@@ -151,9 +160,66 @@ describe("marinade-staking-demo", () => {
           getMsolFrom: treasurymSolAta,
           getMsolFromAuthority: treasuryPda,
           transferSolTo: treasuryPda,
-          treasuryMsolAccount: new PublicKey(
-            "B1aLzaNMeFVAyQ6f3XbbUyKcH2YPHu2fqiEagmiF23VR"
-          ),
+          treasuryMsolAccount: marinadeTreasuryMsol,
+          marinadeProgram,
+        })
+        .rpc({ commitment: "confirmed" });
+      console.log("Your transaction signature", tx);
+    } catch (error) {
+      console.log("Error", error);
+      throw error;
+    }
+  });
+
+  it("Order unstake", async () => {
+    [ticketPda, ticketBump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("ticket")],
+      program.programId
+    );
+
+    console.log("ticketPda", ticketPda.toBase58(), "ticketBump", ticketBump);
+
+    try {
+      const tx = await program.methods
+        .delayedUnstake(new BN(1e9), ticketBump, treasuryBump)
+        .accounts({
+          signer: wallet.publicKey,
+          ticket: ticketPda,
+          msolMint: marinadeState.mSolMintAddress,
+          burnMsolFrom: treasurymSolAta,
+          burnMsolAuthority: treasuryPda,
+          marinadeState: marinadeState.marinadeStateAddress,
+          reservePda: await marinadeState.reserveAddress(),
+          marinadeProgram,
+        })
+        .rpc({ commitment: "confirmed" });
+      console.log("Your transaction signature", tx);
+    } catch (error) {
+      console.log("Error", error);
+      throw error;
+    }
+  });
+
+  it("Claim", async () => {
+    // wait for 30s so that the ticket is ready to be claimed
+    await new Promise((resolve) => setTimeout(resolve, 30000));
+
+    const [ticketPda, ticketBump] = PublicKey.findProgramAddressSync(
+      [Buffer.from("ticket")],
+      program.programId
+    );
+
+    console.log("ticketPda", ticketPda.toBase58(), "ticketBump", ticketBump);
+
+    try {
+      const tx = await program.methods
+        .claim(treasuryBump)
+        .accounts({
+          signer: wallet.publicKey,
+          ticket: ticketPda,
+          transferSolTo: treasuryPda,
+          marinadeState: marinadeState.marinadeStateAddress,
+          reservePda: await marinadeState.reserveAddress(),
           marinadeProgram,
         })
         .rpc({ commitment: "confirmed" });

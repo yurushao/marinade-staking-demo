@@ -21,6 +21,7 @@ shutdown_wait = 2000
 [test.validator]
 ledger = ".anchor/test-ledger"
 rpc_port = 8899
+slots_per_epoch = "32"
 # url = "https://api.devnet.solana.com"
 url = "https://api.mainnet-beta.solana.com"
 
